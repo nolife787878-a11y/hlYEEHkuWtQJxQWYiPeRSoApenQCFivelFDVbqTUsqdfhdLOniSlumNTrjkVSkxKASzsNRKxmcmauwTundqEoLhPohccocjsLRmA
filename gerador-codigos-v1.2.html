@@ -1,0 +1,1608 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferramenta Geral de Códigos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14181c;
+    --bg-raised: #1b2126;
+    --bg-inset: #0f1215;
+    --ink: #e8e6df;
+    --ink-dim: #8b938f;
+    --line: #2a3238;
+    --gold: #b3222c;
+    --gold-dim: #7a1620;
+    --gold-fill: #6b141c;
+    --emerald: #4c9a6a;
+    --danger: #b5524a;
+    --violet: #6b46b8;
+    --violet-dim: #3c2966;
+    --teal: #37b88a;
+    --teal-dim: #1f6b52;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse 900px 500px at 15% -10%, rgba(179,34,44,0.07), transparent),
+      radial-gradient(ellipse 700px 500px at 100% 10%, rgba(76,154,106,0.06), transparent),
+      var(--bg);
+    color:var(--ink);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+    padding:48px 20px 80px;
+  }
+  .wrap{max-width:640px; margin:0 auto; position:relative; z-index:1;}
+
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    color:var(--gold-dim);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+    transition:color .2s ease;
+  }
+  .eyebrow::before{content:"◆"; color:var(--gold); font-size:10px; transition:color .2s ease;}
+  .eyebrow.mode-decode{color:var(--violet-dim);}
+  .eyebrow.mode-decode::before{color:var(--violet);}
+  .eyebrow.mode-batch{color:var(--teal-dim);}
+  .eyebrow.mode-batch::before{color:var(--teal);}
+  .eyebrow.mode-modify{color:var(--teal-dim);}
+  .eyebrow.mode-modify::before{color:var(--teal);}
+
+  h1{
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:clamp(28px,5vw,38px);
+    margin:0 0 8px;
+    letter-spacing:-0.01em;
+  }
+  h1 span{color:var(--gold); transition:color .2s ease;}
+  h1 span.mode-decode{color:var(--violet);}
+  h1 span.mode-batch{color:var(--teal);}
+  h1 span.mode-modify{color:var(--teal);}
+  .sub{color:var(--ink-dim); font-size:15px; line-height:1.6; margin:0 0 28px; max-width:52ch;}
+
+  .tabs{
+    display:flex;
+    gap:6px;
+    margin-bottom:32px;
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:4px;
+  }
+  .tab{
+    flex:1;
+    text-align:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:600;
+    letter-spacing:.04em;
+    color:var(--ink-dim);
+    padding:10px 8px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:background .15s ease, color .15s ease;
+    user-select:none;
+  }
+  .tab:hover{color:var(--ink);}
+  .tab.active.mode-generate{background:var(--gold-fill); color:#f3e6e6;}
+  .tab.active.mode-batch{background:#134a3a; color:#d3f5e8;}
+  .tab.active.mode-modify{background:#134a3a; color:#d3f5e8;}
+  .tab.active.mode-decode{background:var(--violet-dim); color:#ece6f7;}
+
+  .view{display:none;}
+  .view.active{display:block;}
+
+  .card{
+    background:var(--bg-raised);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:28px;
+    margin-bottom:20px;
+  }
+
+  label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:8px;
+  }
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  .field-hint{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    color:#5a6268;
+    margin-top:6px;
+  }
+  input, textarea, select{
+    width:100%;
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    color:var(--ink);
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    padding:12px 14px;
+    border-radius:6px;
+    outline:none;
+    transition:border-color .15s ease;
+  }
+  select{cursor:pointer; font-size:13px;}
+  textarea{resize:vertical; min-height:76px; line-height:1.5;}
+  input:focus, textarea:focus, select:focus{border-color:var(--gold-dim);}
+  #decodeView input:focus, #decodeView textarea:focus{border-color:var(--violet-dim);}
+  #modifyView input:focus, #modifyView textarea:focus, #modifyView select:focus{border-color:var(--teal-dim);}
+  input::placeholder, textarea::placeholder{color:#4a5257;}
+  input[readonly]{opacity:.75; pointer-events:none;}
+  @keyframes fieldFlash{
+    0%{border-color:var(--gold); box-shadow:0 0 0 2px rgba(179,34,44,0.25);}
+    100%{border-color:var(--line); box-shadow:none;}
+  }
+  input.field-flash{animation:fieldFlash .5s ease-out;}
+
+  .expiry-row{display:flex; gap:10px;}
+  .expiry-row input{flex:1;}
+  .chip-group{margin-top:14px;}
+  .chip-group:first-of-type{margin-top:10px;}
+  .chip-group-label{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#5a6268;
+    margin-bottom:6px;
+  }
+  .chip-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:var(--ink-dim);
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    padding:6px 10px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  .chip:hover{border-color:var(--gold-dim); color:var(--gold);}
+  .chip.active{border-color:var(--gold); color:var(--gold); background:rgba(179,34,44,0.10);}
+
+  .settings-bar{padding:20px 28px; display:flex; gap:28px; flex-wrap:wrap;}
+  .settings-bar.mode-modify .lang-chip:hover{border-color:var(--teal-dim); color:var(--teal);}
+  .settings-bar.mode-modify .lang-chip.active{border-color:var(--teal); color:var(--teal); background:rgba(55,184,138,0.10);}
+  .settings-bar.mode-modify select:focus{border-color:var(--teal-dim);}
+  .settings-group{flex:1; min-width:180px;}
+  .settings-group .chip-row{margin-top:0;}
+
+  .custom-time-row{display:flex; gap:8px;}
+  .custom-time-amount{width:76px; flex:0 0 76px; text-align:center;}
+  .custom-time-unit{flex:1;}
+  .custom-time-actions{display:flex; gap:8px; margin-top:8px;}
+  .custom-time-btn{
+    flex:1;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:600;
+    color:var(--ink-dim);
+    background:var(--bg-inset);
+    border:1px solid var(--line);
+    padding:10px 8px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .custom-time-btn:hover{border-color:var(--gold-dim); color:var(--gold);}
+  #modifyView .custom-time-btn:hover{border-color:var(--teal-dim); color:var(--teal);}
+
+  button.generate, button.decode-btn{
+    width:100%;
+    margin-top:24px;
+    background:var(--gold-fill);
+    color:#f3e6e6;
+    border:1px solid var(--gold);
+    font-family:'JetBrains Mono', monospace;
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:.03em;
+    padding:14px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  button.decode-btn{background:var(--violet-dim); color:#ece6f7; border-color:var(--violet);}
+  button.generate.teal{background:var(--teal-dim); color:#d3f5e8; border-color:var(--teal);}
+  button.generate:hover, button.decode-btn:hover{filter:brightness(1.08);}
+  button.generate:active, button.decode-btn:active{transform:scale(.995);}
+  button.generate:disabled, button.decode-btn:disabled{background:var(--line); color:var(--ink-dim); cursor:not-allowed;}
+
+  .err{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:var(--danger);
+    margin-top:14px;
+    display:none;
+  }
+
+  .tooltip{
+    display:none;
+    margin-top:24px;
+    background:#1a0d0e;
+    border:1px solid #4a2024;
+    box-shadow:0 0 0 1px #260f11, 0 8px 24px rgba(0,0,0,.4);
+    border-radius:8px;
+    padding:18px 20px;
+    font-family:'JetBrains Mono', monospace;
+  }
+  .code-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:#120a0b;
+    border:1px solid #3a1a1d;
+    border-radius:6px;
+    padding:12px 14px;
+    margin-bottom:12px;
+  }
+  .tooltip .code{
+    color:var(--emerald);
+    font-size:13.5px;
+    word-break:break-all;
+    line-height:1.5;
+    flex:1;
+    user-select:all;
+    cursor:text;
+  }
+  .copy-btn-small{
+    flex-shrink:0;
+    padding:7px 12px;
+    font-size:11px;
+  }
+  .msg-preview{
+    background:#120a0b;
+    border:1px solid #3a1a1d;
+    border-radius:6px;
+    padding:14px 16px;
+    margin:10px 0 4px;
+    font-size:13px;
+    line-height:1.7;
+    color:#e2d2d2;
+    white-space:pre-wrap;
+    word-break:break-all;
+    user-select:all;
+    cursor:text;
+  }
+  .tooltip .lore{color:#c99a9a; font-size:12px; margin:2px 0;}
+  .tooltip .meta{
+    margin-top:12px;
+    padding-top:12px;
+    border-top:1px solid #35171a;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .tooltip .meta span{color:var(--ink-dim); font-size:11px;}
+  .copy-btn{
+    background:var(--emerald);
+    border:1px solid var(--emerald);
+    color:#0b1a10;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:700;
+    padding:8px 16px;
+    border-radius:5px;
+    cursor:pointer;
+    transition:filter .15s ease, transform .1s ease;
+  }
+  .copy-btn:hover{filter:brightness(1.1);}
+  .copy-btn:active{transform:scale(.97);}
+
+  .tooltip.violet{
+    background:#150c22;
+    border-color:#3a2a52;
+    box-shadow:0 0 0 1px #1a1226, 0 8px 24px rgba(0,0,0,.4);
+  }
+  .tooltip.violet .lore{color:#c9bfe0;}
+  .tooltip.violet .code-row{background:#100a1a; border-color:#2c1f47;}
+  .tooltip.violet .code{color:var(--violet);}
+  .tooltip.violet .msg-preview{background:#100a1a; border-color:#2c1f47; color:#d8d0e8;}
+  .tooltip.violet .meta{border-top-color:#241a3a;}
+  .tooltip.violet .copy-btn{background:var(--violet); border-color:var(--violet); color:#f2eefa;}
+  .tooltip.violet .copy-btn-small{background:var(--violet-dim); border-color:var(--violet); color:#ece6f7;}
+
+  .tooltip.teal{
+    background:#0a1f18;
+    border-color:#1f4a3a;
+    box-shadow:0 0 0 1px #0d2a20, 0 8px 24px rgba(0,0,0,.4);
+  }
+  .tooltip.teal .lore{color:#9fd9c0;}
+  .tooltip.teal .code-row{background:#081a14; border-color:#1a3f30;}
+  .tooltip.teal .code{color:var(--teal);}
+  .tooltip.teal .msg-preview{background:#081a14; border-color:#1a3f30; color:#cdece0;}
+  .tooltip.teal .meta{border-top-color:#173829;}
+  .tooltip.teal .copy-btn{background:var(--teal); border-color:var(--teal); color:#08251b;}
+  .tooltip.teal .copy-btn-small{background:var(--teal-dim); border-color:var(--teal); color:#d3f5e8;}
+
+  .rain-bg{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    pointer-events:none;
+    z-index:0;
+  }
+  .rain-item{
+    position:absolute;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    white-space:nowrap;
+    letter-spacing:.05em;
+    opacity:0;
+    will-change:transform, opacity;
+    writing-mode:vertical-rl;
+    text-orientation:upright;
+  }
+  .rain-item.red{color:var(--gold-dim); text-shadow:0 0 10px rgba(179,34,44,0.35);}
+  .rain-item.violet{color:var(--violet-dim); text-shadow:0 0 10px rgba(107,70,184,0.35);}
+  .rain-item.teal{color:var(--teal-dim); text-shadow:0 0 10px rgba(55,184,138,0.35);}
+  @keyframes rainFall{
+    0%{transform:translateY(-40px); opacity:0;}
+    8%{opacity:.6;}
+    92%{opacity:.6;}
+    100%{transform:translateY(100vh); opacity:0;}
+  }
+  @keyframes rainRise{
+    0%{transform:translateY(40px); opacity:0;}
+    8%{opacity:.6;}
+    92%{opacity:.6;}
+    100%{transform:translateY(-100vh); opacity:0;}
+  }
+  .rain-item.fall{animation-name:rainFall; animation-timing-function:linear; animation-fill-mode:forwards;}
+  .rain-item.rise{animation-name:rainRise; animation-timing-function:linear; animation-fill-mode:forwards;}
+
+  .decode-panel{
+    display:none;
+    position:relative;
+    margin-top:24px;
+    background:#100b1a;
+    border:1px solid #3a2a52;
+    box-shadow:0 0 0 1px #1a1226, 0 8px 24px rgba(0,0,0,.4);
+    border-radius:8px;
+    padding:20px 22px;
+  }
+  .decode-raw-corner{
+    margin-top:28px;
+    padding-top:14px;
+    border-top:1px solid #251a38;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    color:#4a4160;
+    word-break:break-all;
+    text-align:right;
+    line-height:1.4;
+  }
+  .decode-panel.status-expired{border-color:#4a2a2a; box-shadow:0 0 0 1px #241414, 0 8px 24px rgba(0,0,0,.4);}
+  .decode-panel.mass{margin-top:0; margin-bottom:14px;}
+  .decode-panel.mass:last-child{margin-bottom:0;}
+  .decode-panel.mass .decode-status{margin-bottom:12px;}
+  .decode-status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:5px 10px;
+    border-radius:20px;
+    margin-bottom:16px;
+  }
+  .decode-status.active{background:rgba(76,154,106,0.15); color:var(--emerald);}
+  .decode-status.expired{background:rgba(181,82,74,0.15); color:var(--danger);}
+  .decode-status .dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
+
+  .decode-grid{display:flex; flex-direction:column; gap:14px;}
+  .decode-row{display:flex; justify-content:space-between; align-items:baseline; gap:16px;}
+  .decode-row .dk{
+    font-family:'JetBrains Mono', monospace;
+    font-size:10.5px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:#6f6485;
+    white-space:nowrap;
+  }
+  .decode-row .dv{
+    font-family:'JetBrains Mono', monospace;
+    font-size:14px;
+    color:var(--ink);
+    text-align:right;
+    word-break:break-word;
+  }
+  .decode-row .dv.reward{color:var(--violet);}
+  .decode-row .dv.countdown-active{color:var(--emerald);}
+  .decode-row .dv.countdown-expired{color:var(--danger);}
+
+  .decode-raw{
+    margin-top:16px;
+    padding-top:14px;
+    border-top:1px solid #251a38;
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    color:#5f5578;
+    word-break:break-all;
+    line-height:1.6;
+  }
+
+  .history{margin-top:8px;}
+  .history-title{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-dim);
+    margin-bottom:12px;
+  }
+  .hist-item{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+  }
+  .hist-item:last-child{border-bottom:none;}
+  .hist-item .who{color:var(--ink);}
+  .hist-item .reward{color:var(--gold-dim);}
+  .hist-item .reward.violet{color:var(--violet);}
+  .hist-item .reward.teal{color:var(--teal);}
+  .hist-item .code-mini{
+    color:var(--ink-dim);
+    max-width:200px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .hist-item .st{
+    font-size:10px;
+    padding:2px 7px;
+    border-radius:10px;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+  .hist-item .st.active{background:rgba(76,154,106,0.15); color:var(--emerald);}
+  .hist-item .st.expired{background:rgba(181,82,74,0.15); color:var(--danger);}
+  .hist-item .st.invalid{background:rgba(139,147,143,0.15); color:var(--ink-dim);}
+  .empty{color:var(--ink-dim); font-size:12.5px; font-family:'JetBrains Mono', monospace;}
+
+  .batch-actions{display:flex; gap:10px; margin-top:16px;}
+  .batch-actions button{flex:1;}
+  button.batch-secondary{
+    background:var(--bg-inset);
+    color:var(--ink-dim);
+    border:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px;
+    font-weight:600;
+    padding:10px;
+    border-radius:6px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  button.batch-secondary:hover{border-color:var(--teal-dim); color:var(--teal);}
+  .batch-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .batch-item:last-child{border-bottom:none;}
+  .batch-item .who{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    color:var(--ink);
+    width:110px;
+    flex-shrink:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .batch-item .code-mini2{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11.5px;
+    color:var(--teal);
+    flex:1 1 100%;
+    order:3;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .batch-item .copy-btn-mini{
+    flex-shrink:0;
+    background:none;
+    border:1px solid var(--line);
+    color:var(--ink-dim);
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px;
+    padding:5px 9px;
+    border-radius:5px;
+    cursor:pointer;
+  }
+  .batch-item .copy-btn-mini:hover{border-color:var(--teal-dim); color:var(--teal);}
+</style>
+</head>
+<body>
+<div class="rain-bg" id="rainGenerate"></div>
+<div class="rain-bg" id="rainDecode" style="display:none;"></div>
+<div class="rain-bg" id="rainModify" style="display:none;"></div>
+<div class="wrap">
+
+  <div class="eyebrow" id="eyebrow">DBE Server Tools</div>
+  <h1><span id="titleWord">Gerador</span> de Códigos</h1>
+  <p class="sub" id="subText">Gerador de códigos</p>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active mode-generate" id="tabGenerate" data-mode="generate">Gerador</div>
+    <div class="tab" id="tabDecode" data-mode="decode">Decodificador</div>
+    <div class="tab" id="tabModify" data-mode="modify">Modificar</div>
+  </div>
+
+  <div class="view active" id="generateView">
+    <div class="card">
+      <div class="field">
+        <label for="playerName">Nome do jogador</label>
+        <textarea id="playerName" placeholder="" autocomplete="off" style="min-height:44px;"></textarea>
+        <span class="field-hint">Para gerar vários de uma vez, coloque um nick por linha</span>
+      </div>
+
+      <div class="field">
+        <label for="rewardId">ID da recompensa</label>
+        <input id="rewardId" type="text" value="patron" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="expiryInput">Válido até (mesma validade para todos)</label>
+        <div class="expiry-row">
+          <input id="expiryInput" type="datetime-local">
+        </div>
+        <div class="chip-group">
+          <span class="chip-group-label">definir</span>
+          <div class="chip-row">
+            <div class="chip" data-set-hours="24">24h</div>
+            <div class="chip" data-set-hours="168">7 dias</div>
+            <div class="chip" data-set-hours="720">30 dias</div>
+            <div class="chip" data-set-hours="8760">1 ano</div>
+          </div>
+        </div>
+        <div class="chip-group">
+          <span class="chip-group-label">somar</span>
+          <div class="chip-row">
+            <div class="chip" data-hours="24">+24h</div>
+            <div class="chip" data-hours="168">+7 dias</div>
+            <div class="chip" data-hours="720">+30 dias</div>
+            <div class="chip" data-hours="8760">+1 ano</div>
+          </div>
+        </div>
+        <div class="chip-group">
+          <span class="chip-group-label">subtrair</span>
+          <div class="chip-row">
+            <div class="chip" data-hours="-24">−24h</div>
+            <div class="chip" data-hours="-168">−7 dias</div>
+            <div class="chip" data-hours="-720">−30 dias</div>
+            <div class="chip" data-hours="-8760">−1 ano</div>
+          </div>
+        </div>
+        <div class="chip-group">
+          <span class="chip-group-label">personalizado</span>
+          <div class="custom-time-row">
+            <input type="number" id="customAmount" class="custom-time-amount" min="0.01" step="any" value="0" inputmode="decimal">
+            <select id="customUnit" class="custom-time-unit">
+              <option value="minute">minutos</option>
+              <option value="hour">horas</option>
+              <option value="day" selected>dias</option>
+              <option value="week">semanas</option>
+              <option value="fortnight">quinzenas</option>
+              <option value="month">meses</option>
+              <option value="bimester">bimestres</option>
+              <option value="quarter">trimestres</option>
+              <option value="semester">semestres</option>
+              <option value="year">anos</option>
+              <option value="decade">décadas</option>
+              <option value="century">séculos</option>
+              <option value="millennium">milênios</option>
+            </select>
+          </div>
+          <div class="custom-time-actions">
+            <button type="button" class="custom-time-btn" id="customAddBtn">+ somar</button>
+            <button type="button" class="custom-time-btn" id="customSubBtn">− subtrair</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card settings-bar" id="settingsBar">
+        <div class="settings-group">
+          <span class="chip-group-label">idioma da mensagem</span>
+          <div class="chip-row">
+            <div class="chip lang-chip active" id="langPt" data-lang="pt">Português</div>
+            <div class="chip lang-chip" id="langEs" data-lang="es">Español</div>
+            <div class="chip lang-chip" id="langEn" data-lang="en">English</div>
+          </div>
+        </div>
+        <div class="settings-group">
+          <span class="chip-group-label">duração exibida em</span>
+          <select id="durationUnitSelect">
+            <option value="minute">Minutos</option>
+            <option value="hour">Horas</option>
+            <option value="day" selected>Dias</option>
+            <option value="week">Semanas</option>
+            <option value="fortnight">Quinzenas</option>
+            <option value="month">Meses</option>
+            <option value="bimester">Bimestres</option>
+            <option value="quarter">Trimestres</option>
+            <option value="semester">Semestres</option>
+            <option value="year">Anos</option>
+            <option value="decade">Décadas</option>
+            <option value="century">Séculos</option>
+            <option value="millennium">Milênios</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="generate" id="generateBtn">Gerar código</button>
+      <div class="err" id="errBox"></div>
+
+      <div class="tooltip" id="tooltip">
+        <div class="lore" id="loreWho"></div>
+        <div class="lore" id="loreReward"></div>
+
+        <div class="code-row">
+          <div class="code" id="codeOutput"></div>
+          <button class="copy-btn copy-btn-small" id="copyCodeBtn">Copiar código</button>
+        </div>
+
+        <div class="msg-preview" id="msgPreview"></div>
+        <div class="meta">
+          <span id="loreExpiry"></span>
+          <button class="copy-btn" id="copyBtn">Copiar mensagem</button>
+        </div>
+      </div>
+
+      <div class="card" id="batchResultsCard" style="display:none; margin-top:20px; padding:0; border:none; background:none;">
+        <div class="history-title">Códigos gerados (<span id="batchCount">0</span>)</div>
+        <div id="batchResultsList"></div>
+        <div class="batch-actions">
+          <button class="batch-secondary" id="batchCopyAllBtn">Copiar todos</button>
+          <button class="batch-secondary" id="batchDownloadBtn">Baixar .txt</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="history-title">Histórico da sessão (<span id="historyCount">0</span>)</div>
+      <div id="historyList"><p class="empty">Nenhum código gerado ainda.</p></div>
+    </div>
+  </div>
+
+  <div class="view" id="decodeView">
+    <div class="card">
+      <div class="field">
+        <label for="codeInput">Código para decodificar</label>
+        <textarea id="codeInput" placeholder="Cole o código gerado aqui..." autocomplete="off"></textarea>
+        <span class="field-hint">Para validar vários de uma vez, coloque um código por linha</span>
+      </div>
+      <button class="decode-btn" id="decodeBtn">Decodificar</button>
+      <div class="err" id="decodeErrBox"></div>
+
+      <div class="decode-panel" id="decodePanel">
+        <span class="decode-status" id="decodeStatus"></span>
+        <div class="decode-grid">
+          <div class="decode-row">
+            <span class="dk">Jogador</span>
+            <span class="dv" id="dJogador">—</span>
+          </div>
+          <div class="decode-row">
+            <span class="dk">Recompensa</span>
+            <span class="dv reward" id="dRecompensa">—</span>
+          </div>
+          <div class="decode-row">
+            <span class="dk">Tempo restante</span>
+            <span class="dv" id="dRestante">—</span>
+          </div>
+          <div class="decode-row">
+            <span class="dk">Válido até</span>
+            <span class="dv" id="dValidoAte">—</span>
+          </div>
+        </div>
+        <div class="decode-raw-corner" id="decodeRaw"></div>
+      </div>
+
+      <div id="massResultsBlock" style="display:none; margin-top:20px;">
+        <div class="history-title">Validação em massa (<span id="massActive">0</span> ativos / <span id="massExpired">0</span> expirados<span id="massInvalidWrap"> / <span id="massInvalid">0</span> inválidos</span>)</div>
+        <div id="massResultsList"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="history-title">Histórico de decodificações (<span id="decodeHistActive">0</span> ativos / <span id="decodeHistExpired">0</span> expirados)</div>
+      <div id="decodeHistoryList"><p class="empty">Nenhum código decodificado ainda.</p></div>
+    </div>
+  </div>
+
+  <div class="view" id="modifyView">
+    <div class="card">
+      <div class="field">
+        <label for="modifyCodeInput">Código existente</label>
+        <textarea id="modifyCodeInput" placeholder="Cole aqui o código que deseja modificar..." autocomplete="off"></textarea>
+      </div>
+      <button class="generate teal" id="modifyLoadBtn">Carregar código</button>
+      <div class="err" id="modifyLoadErrBox"></div>
+    </div>
+
+    <div class="card" id="modifyEditCard" style="display:none;">
+      <div class="field">
+        <label for="modifyNick">Nick</label>
+        <input id="modifyNick" type="text" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="modifyReward">ID da recompensa (tipo)</label>
+        <input id="modifyReward" type="text" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="modifyExpiryInput">Validade</label>
+        <div class="expiry-row">
+          <input id="modifyExpiryInput" type="datetime-local" readonly>
+        </div>
+        <span class="field-hint" id="modifyOriginalExpiryHint"></span>
+        <div class="chip-group">
+          <span class="chip-group-label">somar</span>
+          <div class="chip-row">
+            <div class="chip" data-modify-hours="24">+24h</div>
+            <div class="chip" data-modify-hours="168">+7 dias</div>
+            <div class="chip" data-modify-hours="720">+30 dias</div>
+            <div class="chip" data-modify-hours="8760">+1 ano</div>
+          </div>
+        </div>
+        <div class="chip-group">
+          <span class="chip-group-label">subtrair</span>
+          <div class="chip-row">
+            <div class="chip" data-modify-hours="-24">−24h</div>
+            <div class="chip" data-modify-hours="-168">−7 dias</div>
+            <div class="chip" data-modify-hours="-720">−30 dias</div>
+            <div class="chip" data-modify-hours="-8760">−1 ano</div>
+          </div>
+        </div>
+        <div class="chip-group">
+          <span class="chip-group-label">personalizado</span>
+          <div class="custom-time-row">
+            <input type="number" id="modifyCustomAmount" class="custom-time-amount" min="0.01" step="any" value="0" inputmode="decimal">
+            <select id="modifyCustomUnit" class="custom-time-unit">
+              <option value="minute">minutos</option>
+              <option value="hour">horas</option>
+              <option value="day" selected>dias</option>
+              <option value="week">semanas</option>
+              <option value="fortnight">quinzenas</option>
+              <option value="month">meses</option>
+              <option value="bimester">bimestres</option>
+              <option value="quarter">trimestres</option>
+              <option value="semester">semestres</option>
+              <option value="year">anos</option>
+              <option value="decade">décadas</option>
+              <option value="century">séculos</option>
+              <option value="millennium">milênios</option>
+            </select>
+          </div>
+          <div class="custom-time-actions">
+            <button type="button" class="custom-time-btn" id="modifyCustomAddBtn">+ somar</button>
+            <button type="button" class="custom-time-btn" id="modifyCustomSubBtn">− subtrair</button>
+          </div>
+        </div>
+      </div>
+
+      <button class="generate teal" id="modifyGenerateBtn">Gerar código modificado</button>
+      <div class="err" id="modifyErrBox"></div>
+
+      <div class="tooltip teal" id="modifyResultBlock">
+        <div class="lore" id="modifyLoreWho"></div>
+        <div class="lore" id="modifyLoreReward"></div>
+
+        <div class="code-row">
+          <div class="code" id="modifyCodeOutput"></div>
+          <button class="copy-btn copy-btn-small" id="copyModifyCodeBtn">Copiar código</button>
+        </div>
+
+        <div class="msg-preview" id="modifyMsgPreview"></div>
+        <div class="meta">
+          <span id="modifyExpiryLabel"></span>
+          <button class="copy-btn" id="copyModifyMsgBtn">Copiar mensagem</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="history-title">Histórico de modificações (<span id="modifyHistCount">0</span>)</div>
+      <div id="modifyHistoryList"><p class="empty">Nenhum código modificado ainda.</p></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function scramble(str) {
+  const arr = str.split("");
+  const len = arr.length;
+  for (let i = len - 1; i >= 1; i--) {
+    const j = (i * 31) % len;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join("");
+}
+function unscramble(str) {
+  const arr = str.split("");
+  const len = arr.length;
+  for (let i = 1; i <= len - 1; i++) {
+    const j = (i * 31) % len;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.join("");
+}
+
+function generateRedeemCode(playerName, rewardId, expiryTimestamp) {
+  const raw = `${playerName}|${rewardId}|${expiryTimestamp}`;
+  const encoded = btoa(raw);
+  return scramble(encoded);
+}
+
+function decodeRedeemCode(code) {
+  const encoded = unscramble(code);
+  const raw = atob(encoded);
+  const parts = raw.split("|");
+  if (parts.length < 3) throw new Error("formato inválido");
+  const [playerName, rewardId, expiryStr, issuedStr] = parts;
+  const expiryTimestamp = Number(expiryStr);
+  const issuedAt = issuedStr !== undefined && issuedStr !== "" ? Number(issuedStr) : null;
+  if (!playerName || !rewardId || isNaN(expiryTimestamp) || (issuedAt !== null && isNaN(issuedAt))) throw new Error("formato inválido");
+  return { playerName, rewardId, expiryTimestamp, issuedAt, raw };
+}
+
+const pages = ['generate', 'decode', 'modify'];
+const generateView = document.getElementById('generateView');
+const decodeView = document.getElementById('decodeView');
+const modifyView = document.getElementById('modifyView');
+const eyebrow = document.getElementById('eyebrow');
+const titleWord = document.getElementById('titleWord');
+const subText = document.getElementById('subText');
+const tabEls = { generate: document.getElementById('tabGenerate'), decode: document.getElementById('tabDecode'), modify: document.getElementById('tabModify') };
+
+const modeMeta = {
+  generate: { title: 'Gerador', sub: 'Gerador de códigos' },
+  decode: { title: 'Decompilador', sub: 'Decompilador de códigos' },
+  modify: { title: 'Modificador', sub: 'Altere nick, recompensa e validade de um código existente' }
+};
+
+// ---- chuva de código de fundo (decorativo) ----
+
+const rainChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+function randomRainSnippet() {
+  const len = 24 + Math.floor(Math.random() * 28);
+  let s = '';
+  for (let i = 0; i < len; i++) s += rainChars[Math.floor(Math.random() * rainChars.length)];
+  return s;
+}
+
+function spawnRainItem(containerId, colorClass, animClass) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const el = document.createElement('div');
+  el.className = `rain-item ${colorClass} ${animClass}`;
+  el.textContent = randomRainSnippet();
+  el.style.left = (Math.random() * 94).toFixed(2) + '%';
+  el.style.animationDuration = (7 + Math.random() * 7).toFixed(2) + 's';
+  if (animClass === 'fall') el.style.top = '0';
+  else el.style.bottom = '0';
+  el.addEventListener('animationend', () => el.remove());
+  container.appendChild(el);
+}
+
+let genRainTimer = null;
+let decodeRainTimer = null;
+let modifyRainTimer = null;
+
+function startGenRain() {
+  if (genRainTimer) return;
+  spawnRainItem('rainGenerate', 'red', 'fall');
+  genRainTimer = setInterval(() => spawnRainItem('rainGenerate', 'red', 'fall'), 280);
+}
+function stopGenRain() {
+  if (genRainTimer) { clearInterval(genRainTimer); genRainTimer = null; }
+}
+function startDecodeRain() {
+  if (decodeRainTimer) return;
+  spawnRainItem('rainDecode', 'violet', 'rise');
+  decodeRainTimer = setInterval(() => spawnRainItem('rainDecode', 'violet', 'rise'), 280);
+}
+function stopDecodeRain() {
+  if (decodeRainTimer) { clearInterval(decodeRainTimer); decodeRainTimer = null; }
+}
+function startModifyRain() {
+  if (modifyRainTimer) return;
+  spawnRainItem('rainModify', 'teal', 'fall');
+  modifyRainTimer = setInterval(() => spawnRainItem('rainModify', 'teal', 'fall'), 280);
+}
+function stopModifyRain() {
+  if (modifyRainTimer) { clearInterval(modifyRainTimer); modifyRainTimer = null; }
+}
+
+function setMode(mode) {
+  generateView.classList.toggle('active', mode === 'generate');
+  decodeView.classList.toggle('active', mode === 'decode');
+  modifyView.classList.toggle('active', mode === 'modify');
+  eyebrow.className = 'eyebrow' + (mode !== 'generate' ? ' mode-' + mode : '');
+  titleWord.className = mode !== 'generate' ? 'mode-' + mode : '';
+  Object.entries(tabEls).forEach(([m, el]) => {
+    el.classList.toggle('active', m === mode);
+    el.classList.toggle('mode-' + m, m === mode);
+  });
+  titleWord.textContent = modeMeta[mode].title;
+  subText.textContent = modeMeta[mode].sub;
+
+  const settingsBar = document.getElementById('settingsBar');
+  const settingsBarAnchor = document.getElementById(mode === 'modify' ? 'modifyGenerateBtn' : 'generateBtn');
+  settingsBarAnchor.insertAdjacentElement('beforebegin', settingsBar);
+  settingsBar.className = 'card settings-bar' + (mode !== 'generate' ? ' mode-' + mode : '');
+  settingsBar.style.display = mode === 'decode' ? 'none' : 'flex';
+
+  document.getElementById('rainGenerate').style.display = mode === 'generate' ? 'block' : 'none';
+  document.getElementById('rainDecode').style.display = mode === 'decode' ? 'block' : 'none';
+  document.getElementById('rainModify').style.display = mode === 'modify' ? 'block' : 'none';
+  stopGenRain(); stopDecodeRain(); stopModifyRain();
+  if (mode === 'generate') startGenRain();
+  else if (mode === 'decode') startDecodeRain();
+  else if (mode === 'modify') startModifyRain();
+}
+Object.entries(tabEls).forEach(([mode, el]) => el.addEventListener('click', () => setMode(mode)));
+setMode('generate');
+
+const history = [];
+
+// ---- idioma da mensagem e unidade de duração (configuração global, usada em todas as páginas) ----
+const TIME_UNITS = {
+  minute:    { ms: 60 * 1000,                 pt: ['minuto', 'minutos'],       es: ['minuto', 'minutos'],       en: ['minute', 'minutes'] },
+  hour:      { ms: 60 * 60 * 1000,            pt: ['hora', 'horas'],           es: ['hora', 'horas'],           en: ['hour', 'hours'] },
+  day:       { ms: 24 * 60 * 60 * 1000,       pt: ['dia', 'dias'],             es: ['día', 'días'],             en: ['day', 'days'] },
+  week:      { ms: 7 * 24 * 60 * 60 * 1000,   pt: ['semana', 'semanas'],       es: ['semana', 'semanas'],       en: ['week', 'weeks'] },
+  fortnight: { ms: 15 * 24 * 60 * 60 * 1000,  pt: ['quinzena', 'quinzenas'],   es: ['quincena', 'quincenas'],   en: ['fortnight', 'fortnights'] },
+  month:     { ms: 30 * 24 * 60 * 60 * 1000,  pt: ['mês', 'meses'],            es: ['mes', 'meses'],            en: ['month', 'months'] },
+  bimester:  { ms: 60 * 24 * 60 * 60 * 1000,  pt: ['bimestre', 'bimestres'],   es: ['bimestre', 'bimestres'],   en: ['bimester', 'bimesters'] },
+  quarter:   { ms: 90 * 24 * 60 * 60 * 1000,  pt: ['trimestre', 'trimestres'], es: ['trimestre', 'trimestres'], en: ['quarter', 'quarters'] },
+  semester:  { ms: 180 * 24 * 60 * 60 * 1000, pt: ['semestre', 'semestres'],   es: ['semestre', 'semestres'],   en: ['semester', 'semesters'] },
+  year:      { ms: 365 * 24 * 60 * 60 * 1000, pt: ['ano', 'anos'],             es: ['año', 'años'],             en: ['year', 'years'] },
+  decade:     { ms: 10 * 365 * 24 * 60 * 60 * 1000,   pt: ['década', 'décadas'],   es: ['década', 'décadas'],   en: ['decade', 'decades'] },
+  century:    { ms: 100 * 365 * 24 * 60 * 60 * 1000,  pt: ['século', 'séculos'],   es: ['siglo', 'siglos'],     en: ['century', 'centuries'] },
+  millennium: { ms: 1000 * 365 * 24 * 60 * 60 * 1000, pt: ['milênio', 'milênios'], es: ['milenio', 'milenios'], en: ['millennium', 'millennia'] },
+};
+
+let currentLang = 'pt';
+let currentDurationUnit = 'day';
+
+document.querySelectorAll('.lang-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    currentLang = chip.dataset.lang;
+    document.querySelectorAll('.lang-chip').forEach(c => c.classList.toggle('active', c === chip));
+  });
+});
+document.getElementById('durationUnitSelect').addEventListener('change', (e) => {
+  currentDurationUnit = e.target.value;
+});
+
+function formatDuration(ms) {
+  const unit = TIME_UNITS[currentDurationUnit];
+  const qty = Math.max(1, Math.round(Math.abs(ms) / unit.ms));
+  const [singular, plural] = unit[currentLang];
+  return `${qty} ${qty === 1 ? singular : plural}`;
+}
+
+const MESSAGE_TEMPLATES = {
+  pt: (code, tipo, nick, unixTs) =>
+`Resgate pelo bate-papo do mundo usando o comando abaixo:
+\`\`/dbe:redeem "${code}"\`\`
+Resgate pela caixa de texto em versões patron usando: \`\`${code}\`\`
+Código ${tipo} para \`${nick}\` expira <t:${unixTs}:R>!`,
+  es: (code, tipo, nick, unixTs) =>
+`Canjea por el chat mundial usando el siguiente comando:
+\`\`/dbe:redeem "${code}"\`\`
+Canjea por el cuadro de texto en las versiones patron usando: \`\`${code}\`\`
+¡Código ${tipo} para \`${nick}\` expira <t:${unixTs}:R>!`,
+  en: (code, tipo, nick, unixTs) =>
+`Redeem via world chat using the command below:
+\`\`/dbe:redeem "${code}"\`\`
+Redeem via the text box in patron versions using: \`\`${code}\`\`
+Code ${tipo} for \`${nick}\` expires <t:${unixTs}:R>!`,
+};
+
+function buildRedeemMessage(code, rewardId, playerName, expiryTimestamp) {
+  const unixTs = Math.floor(expiryTimestamp / 1000);
+  return MESSAGE_TEMPLATES[currentLang](code, rewardId, playerName, unixTs);
+}
+
+const expiryInput = document.getElementById('expiryInput');
+function flashField(el) {
+  el.classList.remove('field-flash');
+  void el.offsetWidth;
+  el.classList.add('field-flash');
+}
+function commitExpiryValue(inputEl, iso) {
+  inputEl.value = iso;
+  inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+  inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+  flashField(inputEl);
+}
+function setExpiryFromNow(hours) {
+  const d = new Date(Date.now() + hours * 3600 * 1000);
+  d.setSeconds(0,0);
+  const iso = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  commitExpiryValue(expiryInput, iso);
+}
+function addToExpiryMs(ms) {
+  const current = expiryInput.value ? new Date(expiryInput.value) : new Date();
+  const base = isNaN(current.getTime()) ? new Date() : current;
+  const d = new Date(base.getTime() + ms);
+  if (isNaN(d.getTime()) || d.getUTCFullYear() < 1 || d.getUTCFullYear() > 9999) {
+    showError('Data resultante fora do intervalo permitido (o ano precisa ficar entre 1 e 9999).');
+    return;
+  }
+  d.setSeconds(0,0);
+  const iso = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  commitExpiryValue(expiryInput, iso);
+}
+function addToExpiry(hours) { addToExpiryMs(hours * 3600 * 1000); }
+setExpiryFromNow(720);
+
+document.querySelectorAll('.chip[data-hours]').forEach(chip => {
+  chip.addEventListener('click', () => addToExpiry(parseInt(chip.dataset.hours)));
+});
+document.querySelectorAll('.chip[data-set-hours]').forEach(chip => {
+  chip.addEventListener('click', () => setExpiryFromNow(parseInt(chip.dataset.setHours)));
+});
+
+const errBox = document.getElementById('errBox');
+function showError(msg) {
+  errBox.textContent = msg;
+  errBox.style.display = 'block';
+}
+function clearError() {
+  errBox.style.display = 'none';
+}
+
+document.getElementById('customAddBtn').addEventListener('click', () => {
+  clearError();
+  const amount = parseFloat(document.getElementById('customAmount').value);
+  const unitKey = document.getElementById('customUnit').value;
+  if (isNaN(amount) || amount <= 0) { showError('Informe uma quantidade válida.'); return; }
+  addToExpiryMs(amount * TIME_UNITS[unitKey].ms);
+});
+document.getElementById('customSubBtn').addEventListener('click', () => {
+  clearError();
+  const amount = parseFloat(document.getElementById('customAmount').value);
+  const unitKey = document.getElementById('customUnit').value;
+  if (isNaN(amount) || amount <= 0) { showError('Informe uma quantidade válida.'); return; }
+  addToExpiryMs(-amount * TIME_UNITS[unitKey].ms);
+});
+
+document.getElementById('generateBtn').addEventListener('click', () => {
+  clearError();
+  const names = document.getElementById('playerName').value
+    .split('\n').map(n => n.trim()).filter(Boolean);
+  const rewardId = document.getElementById('rewardId').value.trim();
+  const expiryVal = expiryInput.value;
+
+  if (names.length === 0) return showError('Informe o nome de ao menos um jogador.');
+  if (!rewardId) return showError('Informe o ID da recompensa.');
+  if (!expiryVal) return showError('Informe a validade.');
+  if (/[|]/.test(rewardId)) return showError('O ID da recompensa não pode conter o caractere "|".');
+  if (names.some(n => n.includes('|'))) return showError('Nomes não podem conter o caractere "|".');
+
+  const expiryTimestamp = new Date(expiryVal).getTime();
+  if (isNaN(expiryTimestamp)) return showError('Validade inválida.');
+  if (expiryTimestamp <= Date.now()) return showError('A validade precisa ser no futuro.');
+
+  if (names.length === 1) {
+    // caminho de código único: mostra o preview detalhado, sem lista de lote
+    document.getElementById('batchResultsCard').style.display = 'none';
+    const playerName = names[0];
+    const code = generateRedeemCode(playerName, rewardId, expiryTimestamp);
+    const copyText = buildRedeemMessage(code, rewardId, playerName, expiryTimestamp);
+
+    document.getElementById('loreWho').textContent = `Para: ${playerName}`;
+    document.getElementById('loreReward').textContent = `Recompensa: ${rewardId}`;
+    document.getElementById('codeOutput').textContent = code;
+    document.getElementById('msgPreview').textContent = copyText;
+    document.getElementById('loreExpiry').textContent = `${formatDuration(expiryTimestamp - Date.now())} — expira em ${new Date(expiryTimestamp).toLocaleString('pt-BR')}`;
+    document.getElementById('tooltip').style.display = 'block';
+    document.getElementById('copyBtn').dataset.copyText = copyText;
+
+    history.unshift({ playerName, rewardId, code, expiryTimestamp, copyText });
+    renderHistory();
+  } else {
+    // caminho de lote: várias linhas -> vários códigos
+    document.getElementById('tooltip').style.display = 'none';
+    lastBatchResults = names.map(playerName => {
+      const code = generateRedeemCode(playerName, rewardId, expiryTimestamp);
+      const copyText = buildRedeemMessage(code, rewardId, playerName, expiryTimestamp);
+      history.unshift({ playerName, rewardId, code, expiryTimestamp, copyText });
+      return { playerName, rewardId, code, message: copyText };
+    });
+    renderHistory();
+    renderBatchResults();
+  }
+});
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  return ok;
+}
+
+function copyWithFeedback(btnEl, text) {
+  const flash = (msg) => {
+    const old = btnEl.dataset.label || btnEl.textContent;
+    btnEl.dataset.label = old;
+    btnEl.textContent = msg;
+    setTimeout(() => btnEl.textContent = old, 1400);
+  };
+  if (fallbackCopy(text)) {
+    flash('copiado!');
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(() => {
+      flash('copiado!');
+    }).catch(() => {
+      flash('falhou :(');
+    });
+  } else {
+    flash('falhou :(');
+  }
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const btnEl = document.getElementById('copyBtn');
+  const text = btnEl.dataset.copyText || document.getElementById('codeOutput').textContent;
+  copyWithFeedback(btnEl, text);
+});
+
+document.getElementById('copyCodeBtn').addEventListener('click', () => {
+  const btnEl = document.getElementById('copyCodeBtn');
+  const text = document.getElementById('codeOutput').textContent;
+  copyWithFeedback(btnEl, text);
+});
+
+
+
+function renderHistory() {
+  const el = document.getElementById('historyList');
+  document.getElementById('historyCount').textContent = history.length;
+  if (history.length === 0) {
+    el.innerHTML = '<p class="empty">Nenhum código gerado ainda.</p>';
+    return;
+  }
+  el.innerHTML = history.map(h => `
+    <div class="hist-item">
+      <span class="who">${escapeHtml(h.playerName)}</span>
+      <span class="reward">${escapeHtml(h.rewardId)}</span>
+      <span class="code-mini">${escapeHtml(h.code)}</span>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+const decodeHistory = [];
+let countdownTimer = null;
+let massCountdownTimer = null;
+let currentDecodedExpiry = null;
+
+const decodeErrBox = document.getElementById('decodeErrBox');
+function showDecodeError(msg) {
+  decodeErrBox.textContent = msg;
+  decodeErrBox.style.display = 'block';
+}
+function clearDecodeError() {
+  decodeErrBox.style.display = 'none';
+}
+
+function formatRemaining(ms) {
+  const abs = Math.abs(ms);
+  const totalMin = Math.floor(abs / 60000);
+  const days = Math.floor(totalMin / 1440);
+  const hours = Math.floor((totalMin % 1440) / 60);
+  const minutes = totalMin % 60;
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours || days) parts.push(`${hours}h`);
+  parts.push(`${minutes}m`);
+  return parts.join(' ');
+}
+
+function updateCountdown() {
+  if (currentDecodedExpiry === null) return;
+  const diff = currentDecodedExpiry - Date.now();
+  const restanteEl = document.getElementById('dRestante');
+  const panel = document.getElementById('decodePanel');
+  const statusEl = document.getElementById('decodeStatus');
+
+  if (diff > 0) {
+    restanteEl.textContent = formatRemaining(diff);
+    restanteEl.className = 'dv countdown-active';
+    panel.classList.remove('status-expired');
+    statusEl.className = 'decode-status active';
+    statusEl.innerHTML = '<span class="dot"></span> ativo';
+  } else {
+    restanteEl.textContent = `expirou há ${formatRemaining(diff)}`;
+    restanteEl.className = 'dv countdown-expired';
+    panel.classList.add('status-expired');
+    statusEl.className = 'decode-status expired';
+    statusEl.innerHTML = '<span class="dot"></span> expirado';
+  }
+}
+
+function updateMassCountdowns() {
+  document.querySelectorAll('.mass-countdown').forEach(el => {
+    const expiry = parseInt(el.dataset.expiry, 10);
+    const diff = expiry - Date.now();
+    if (diff > 0) {
+      el.textContent = formatRemaining(diff);
+      el.className = 'dv mass-countdown countdown-active';
+    } else {
+      el.textContent = `expirou há ${formatRemaining(diff)}`;
+      el.className = 'dv mass-countdown countdown-expired';
+    }
+  });
+}
+
+document.getElementById('decodeBtn').addEventListener('click', () => {
+  clearDecodeError();
+  const codes = document.getElementById('codeInput').value
+    .split('\n').map(c => c.trim()).filter(Boolean);
+  if (codes.length === 0) return showDecodeError('Cole ao menos um código para decodificar.');
+
+  if (codes.length === 1) {
+    document.getElementById('massResultsBlock').style.display = 'none';
+    if (massCountdownTimer) clearInterval(massCountdownTimer);
+    const raw = codes[0];
+
+    let result;
+    try {
+      result = decodeRedeemCode(raw);
+    } catch (e) {
+      document.getElementById('decodePanel').style.display = 'none';
+      currentDecodedExpiry = null;
+      if (countdownTimer) clearInterval(countdownTimer);
+      return showDecodeError('Código inválido ou corrompido.');
+    }
+
+    const { playerName, rewardId, expiryTimestamp } = result;
+
+    document.getElementById('dJogador').textContent = playerName;
+    document.getElementById('dRecompensa').textContent = rewardId;
+    document.getElementById('dValidoAte').textContent = new Date(expiryTimestamp).toLocaleString('pt-BR');
+    document.getElementById('decodeRaw').textContent = `${playerName}|${rewardId}|${expiryTimestamp}`;
+    document.getElementById('decodePanel').style.display = 'block';
+
+    currentDecodedExpiry = expiryTimestamp;
+    if (countdownTimer) clearInterval(countdownTimer);
+    updateCountdown();
+    countdownTimer = setInterval(updateCountdown, 1000);
+
+    decodeHistory.unshift({ playerName, rewardId, expiryTimestamp, code: raw });
+    renderDecodeHistory();
+  } else {
+    // validação em massa: várias linhas -> decodifica todas e mostra o status de cada
+    document.getElementById('decodePanel').style.display = 'none';
+    currentDecodedExpiry = null;
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    let activeCount = 0, expiredCount = 0, invalidCount = 0;
+    const rows = codes.map((raw) => {
+      try {
+        const { playerName, rewardId, expiryTimestamp } = decodeRedeemCode(raw);
+        const active = expiryTimestamp > Date.now();
+        if (active) activeCount++; else expiredCount++;
+        decodeHistory.unshift({ playerName, rewardId, expiryTimestamp, code: raw });
+        return `
+          <div class="decode-panel mass ${active ? '' : 'status-expired'}" style="display:block;">
+            <span class="decode-status ${active ? 'active' : 'expired'}"><span class="dot"></span> ${active ? 'ativo' : 'expirado'}</span>
+            <div class="decode-grid">
+              <div class="decode-row">
+                <span class="dk">Jogador</span>
+                <span class="dv">${escapeHtml(playerName)}</span>
+              </div>
+              <div class="decode-row">
+                <span class="dk">Recompensa</span>
+                <span class="dv reward">${escapeHtml(rewardId)}</span>
+              </div>
+              <div class="decode-row">
+                <span class="dk">Tempo restante</span>
+                <span class="dv mass-countdown ${active ? 'countdown-active' : 'countdown-expired'}" data-expiry="${expiryTimestamp}">—</span>
+              </div>
+              <div class="decode-row">
+                <span class="dk">Válido até</span>
+                <span class="dv">${new Date(expiryTimestamp).toLocaleString('pt-BR')}</span>
+              </div>
+            </div>
+          </div>`;
+      } catch (e) {
+        invalidCount++;
+        return `
+          <div class="hist-item">
+            <span class="who">${escapeHtml(raw.slice(0, 24))}${raw.length > 24 ? '…' : ''}</span>
+            <span class="st invalid">inválido</span>
+          </div>`;
+      }
+    });
+
+    document.getElementById('massActive').textContent = activeCount;
+    document.getElementById('massExpired').textContent = expiredCount;
+    document.getElementById('massInvalidWrap').style.display = invalidCount > 0 ? 'inline' : 'none';
+    document.getElementById('massInvalid').textContent = invalidCount;
+    document.getElementById('massResultsList').innerHTML = rows.join('');
+    document.getElementById('massResultsBlock').style.display = 'block';
+
+    if (massCountdownTimer) clearInterval(massCountdownTimer);
+    if (activeCount + expiredCount > 0) {
+      updateMassCountdowns();
+      massCountdownTimer = setInterval(updateMassCountdowns, 1000);
+    }
+
+    renderDecodeHistory();
+  }
+});
+
+function renderDecodeHistory() {
+  const el = document.getElementById('decodeHistoryList');
+  const activeCount = decodeHistory.filter(h => h.expiryTimestamp > Date.now()).length;
+  document.getElementById('decodeHistActive').textContent = activeCount;
+  document.getElementById('decodeHistExpired').textContent = decodeHistory.length - activeCount;
+  if (decodeHistory.length === 0) {
+    el.innerHTML = '<p class="empty">Nenhum código decodificado ainda.</p>';
+    return;
+  }
+  el.innerHTML = decodeHistory.map(h => {
+    const active = h.expiryTimestamp > Date.now();
+    return `
+    <div class="hist-item">
+      <span class="who">${escapeHtml(h.playerName)}</span>
+      <span class="reward violet">${escapeHtml(h.rewardId)}</span>
+      <span class="st ${active ? 'active' : 'expired'}">${active ? 'ativo' : 'expirado'}</span>
+    </div>
+  `;
+  }).join('');
+}
+
+// ---- lote (várias linhas no campo de nome) ----
+
+let lastBatchResults = [];
+
+function renderBatchResults() {
+  const card = document.getElementById('batchResultsCard');
+  const list = document.getElementById('batchResultsList');
+  document.getElementById('batchCount').textContent = lastBatchResults.length;
+
+  if (lastBatchResults.length === 0) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  list.innerHTML = lastBatchResults.map((r, i) => `
+    <div class="batch-item">
+      <span class="who">${escapeHtml(r.playerName)}</span>
+      <span class="code-mini2">${escapeHtml(r.code)}</span>
+      <button class="copy-btn-mini" data-idx="${i}" data-type="code">código</button>
+      <button class="copy-btn-mini" data-idx="${i}" data-type="message">mensagem</button>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.copy-btn-mini').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = lastBatchResults[parseInt(btn.dataset.idx)];
+      const text = btn.dataset.type === 'message' ? r.message : r.code;
+      copyWithFeedback(btn, text);
+    });
+  });
+}
+
+document.getElementById('batchCopyAllBtn').addEventListener('click', () => {
+  const text = lastBatchResults.map(r => r.message).join('\n\n');
+  copyWithFeedback(document.getElementById('batchCopyAllBtn'), text);
+});
+
+document.getElementById('batchDownloadBtn').addEventListener('click', () => {
+  const text = lastBatchResults.map(r => r.message).join('\n\n');
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `codigos-${document.getElementById('rewardId').value.trim() || 'lote'}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// ---- modificar ----
+// Usa um código já existente como base: carrega os valores atuais (nick, recompensa,
+// validade) e permite editá-los. O tempo só pode ser ajustado por adição/subtração,
+// sempre a partir da validade do próprio código carregado (nunca a partir de "agora"),
+// e o resultado não precisa ficar válido numa data futura.
+
+let currentModifySource = null;
+const modifyHistory = [];
+
+function renderModifyHistory() {
+  const el = document.getElementById('modifyHistoryList');
+  document.getElementById('modifyHistCount').textContent = modifyHistory.length;
+  if (modifyHistory.length === 0) {
+    el.innerHTML = '<p class="empty">Nenhum código modificado ainda.</p>';
+    return;
+  }
+  el.innerHTML = modifyHistory.map(h => `
+    <div class="hist-item">
+      <span class="who">${escapeHtml(h.playerName)}</span>
+      <span class="reward teal">${escapeHtml(h.rewardId)}</span>
+      <span class="code-mini">${escapeHtml(h.code)}</span>
+    </div>
+  `).join('');
+}
+
+const modifyExpiryInput = document.getElementById('modifyExpiryInput');
+function setModifyExpiryFromSource() {
+  if (!currentModifySource) return;
+  const d = new Date(currentModifySource.expiryTimestamp);
+  d.setSeconds(0,0);
+  const iso = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  commitExpiryValue(modifyExpiryInput, iso);
+}
+function addToModifyExpiryMs(ms) {
+  if (!currentModifySource) return;
+  const current = modifyExpiryInput.value ? new Date(modifyExpiryInput.value) : new Date(currentModifySource.expiryTimestamp);
+  const base = isNaN(current.getTime()) ? new Date(currentModifySource.expiryTimestamp) : current;
+  const d = new Date(base.getTime() + ms);
+  if (isNaN(d.getTime()) || d.getUTCFullYear() < 1 || d.getUTCFullYear() > 9999) {
+    const box = document.getElementById('modifyErrBox');
+    box.textContent = 'Data resultante fora do intervalo permitido (o ano precisa ficar entre 1 e 9999).';
+    box.style.display = 'block';
+    return;
+  }
+  d.setSeconds(0,0);
+  const iso = new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16);
+  commitExpiryValue(modifyExpiryInput, iso);
+}
+function addToModifyExpiry(hours) { addToModifyExpiryMs(hours * 3600 * 1000); }
+document.querySelectorAll('.chip[data-modify-hours]').forEach(chip => {
+  chip.addEventListener('click', () => addToModifyExpiry(parseInt(chip.dataset.modifyHours)));
+});
+
+const modifyLoadErrBox = document.getElementById('modifyLoadErrBox');
+
+document.getElementById('modifyCustomAddBtn').addEventListener('click', () => {
+  const box = document.getElementById('modifyErrBox');
+  box.style.display = 'none';
+  if (!currentModifySource) return;
+  const amount = parseFloat(document.getElementById('modifyCustomAmount').value);
+  const unitKey = document.getElementById('modifyCustomUnit').value;
+  if (isNaN(amount) || amount <= 0) { box.textContent = 'Informe uma quantidade válida.'; box.style.display = 'block'; return; }
+  addToModifyExpiryMs(amount * TIME_UNITS[unitKey].ms);
+});
+document.getElementById('modifyCustomSubBtn').addEventListener('click', () => {
+  const box = document.getElementById('modifyErrBox');
+  box.style.display = 'none';
+  if (!currentModifySource) return;
+  const amount = parseFloat(document.getElementById('modifyCustomAmount').value);
+  const unitKey = document.getElementById('modifyCustomUnit').value;
+  if (isNaN(amount) || amount <= 0) { box.textContent = 'Informe uma quantidade válida.'; box.style.display = 'block'; return; }
+  addToModifyExpiryMs(-amount * TIME_UNITS[unitKey].ms);
+});
+
+document.getElementById('modifyLoadBtn').addEventListener('click', () => {
+  modifyLoadErrBox.style.display = 'none';
+  const raw = document.getElementById('modifyCodeInput').value.trim();
+  if (!raw) {
+    modifyLoadErrBox.textContent = 'Cole um código para carregar.';
+    modifyLoadErrBox.style.display = 'block';
+    return;
+  }
+
+  let decoded;
+  try {
+    decoded = decodeRedeemCode(raw);
+  } catch (e) {
+    modifyLoadErrBox.textContent = 'Código inválido ou corrompido.';
+    modifyLoadErrBox.style.display = 'block';
+    document.getElementById('modifyEditCard').style.display = 'none';
+    currentModifySource = null;
+    return;
+  }
+
+  currentModifySource = decoded;
+  document.getElementById('modifyNick').value = decoded.playerName;
+  document.getElementById('modifyReward').value = decoded.rewardId;
+  setModifyExpiryFromSource();
+  document.getElementById('modifyOriginalExpiryHint').textContent =
+    `Referência (tempo do código carregado): ${new Date(decoded.expiryTimestamp).toLocaleString('pt-BR')} — ajuste apenas com somar/subtrair`;
+  document.getElementById('modifyErrBox').style.display = 'none';
+  document.getElementById('modifyResultBlock').style.display = 'none';
+  document.getElementById('modifyEditCard').style.display = 'block';
+});
+
+const modifyErrBox = document.getElementById('modifyErrBox');
+document.getElementById('modifyGenerateBtn').addEventListener('click', () => {
+  modifyErrBox.style.display = 'none';
+  if (!currentModifySource) return;
+
+  const playerName = document.getElementById('modifyNick').value.trim();
+  const rewardId = document.getElementById('modifyReward').value.trim();
+  const expiryVal = modifyExpiryInput.value;
+
+  if (!playerName) { modifyErrBox.textContent = 'Informe o nick.'; modifyErrBox.style.display = 'block'; return; }
+  if (!rewardId) { modifyErrBox.textContent = 'Informe o ID da recompensa.'; modifyErrBox.style.display = 'block'; return; }
+  if (playerName.includes('|')) { modifyErrBox.textContent = 'O nick não pode conter o caractere "|".'; modifyErrBox.style.display = 'block'; return; }
+  if (rewardId.includes('|')) { modifyErrBox.textContent = 'O ID da recompensa não pode conter o caractere "|".'; modifyErrBox.style.display = 'block'; return; }
+  if (!expiryVal) { modifyErrBox.textContent = 'Ajuste a validade usando os botões de somar/subtrair.'; modifyErrBox.style.display = 'block'; return; }
+
+  const expiryTimestamp = new Date(expiryVal).getTime();
+  if (isNaN(expiryTimestamp)) { modifyErrBox.textContent = 'Validade inválida.'; modifyErrBox.style.display = 'block'; return; }
+  // Sem exigência de validade futura: o código modificado pode continuar (ou ficar) expirado.
+
+  const code = generateRedeemCode(playerName, rewardId, expiryTimestamp);
+  const active = expiryTimestamp > Date.now();
+  const copyText = buildRedeemMessage(code, rewardId, playerName, expiryTimestamp);
+
+  document.getElementById('modifyLoreWho').textContent = `Para: ${playerName}`;
+  document.getElementById('modifyLoreReward').textContent = `Recompensa: ${rewardId}`;
+  document.getElementById('modifyCodeOutput').textContent = code;
+  document.getElementById('modifyMsgPreview').textContent = copyText;
+  document.getElementById('modifyExpiryLabel').textContent = `${active ? 'ativo — válido até' : 'expirado em'} ${new Date(expiryTimestamp).toLocaleString('pt-BR')}`;
+  document.getElementById('modifyResultBlock').style.display = 'block';
+
+  modifyHistory.unshift({ playerName, rewardId, code, expiryTimestamp, copyText });
+  renderModifyHistory();
+});
+
+document.getElementById('copyModifyCodeBtn').addEventListener('click', () => {
+  copyWithFeedback(document.getElementById('copyModifyCodeBtn'), document.getElementById('modifyCodeOutput').textContent);
+});
+
+document.getElementById('copyModifyMsgBtn').addEventListener('click', () => {
+  copyWithFeedback(document.getElementById('copyModifyMsgBtn'), document.getElementById('modifyMsgPreview').textContent);
+});
+
+</script>
+</body>
+</html>
